@@ -3,14 +3,6 @@ import { FastifyTypedInstance } from "./types";
 import { randomUUID } from "node:crypto";
 import { db } from "./firebase";
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-}
-
-const users = [];
-
 export async function routes(app: FastifyTypedInstance) {
   app.get(
     "/users",
@@ -36,7 +28,6 @@ export async function routes(app: FastifyTypedInstance) {
           name: z.string(),
           email: z.string().email(),
         }),
-        response: "Create user",
       },
     },
     async (request, reply) => {
