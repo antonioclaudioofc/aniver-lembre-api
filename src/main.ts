@@ -10,6 +10,7 @@ async function bootstrap() {
     .setTitle('Aniver Lembre Api')
     .setDescription('A descrição da API Aniver Lembre')
     .setVersion('1.0')
+    .addCookieAuth()
     .build();
   const documentFactory = () => SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, documentFactory);
