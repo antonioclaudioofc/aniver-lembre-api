@@ -1,37 +1,39 @@
 import { Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { FirebaseService } from '../firebase/firebase.service';
+import { UserRecord } from 'firebase-admin/lib/auth/user-record';
 
 @Injectable()
 export class UserService {
   constructor(private readonly firebaseService: FirebaseService) {}
 
-  async create(createUserDto: CreateUserDto) {
-    const db = await this.firebaseService.getFirestore();
+  async create(createUserDto: CreateUserDto): Promise<UserRecord> {
+    const firestore = await this.firebaseService.getFirestore();
+    const auth = await this.firebaseService.getAuth();
 
-    const userData = {
-      ...JSON.parse(JSON.stringify(createUserDto)),
-      createdAt: new Date(),
-    };
+    try {
+      const userPromise = auth.createUser({
+        email: createUserDto.email,
+        password: createUserDto.password,
+        displayName: createUserDto.name,
+      });
 
-    const userRef = await db.collection('users').add(userData);
+      const userDocPromise = userPromise.then((user) =>
+        firestore.collection('users').doc(user.uid).set({
+          email: user.email,
+          name: user.displayName,
+          createdAt: new Date(),
+        }),
+      );
 
-    return { message: 'User added successfully', userId: userRef.id };
+      const [user] = await Promise.all([userPromise, userDocPromise]);
+
+      return user;
+    } catch (error) {
+      if (error?.userRecord?.uid) {
+        await auth.deleteUser(error.userRecord.uid);
+      }
+      throw new Error('Erro ao criar usuário no Firebase');
+    }
   }
-
-  // findAll() {
-  //   return `This action returns all user`;
-  // }
-
-  // findOne(id: number) {
-  //   return `This action returns a #${id} user`;
-  // }
-
-  // update(id: number, updateUserDto: UpdateUserDto) {
-  //   return `This action updates a #${id} user`;
-  // }
-
-  // remove(id: number) {
-  //   return `This action removes a #${id} user`;
-  // }
 }
