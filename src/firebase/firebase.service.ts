@@ -7,11 +7,11 @@ export class FirebaseService {
     @Inject('FIREBASE_ADMIN') private readonly firebaseApp: admin.app.App,
   ) {}
 
-  async getFirestore() {
-    return await this.firebaseApp.firestore();
+  getFirestore() {
+    return this.firebaseApp.firestore();
   }
 
-  async getAuth() {
-    return await this.firebaseApp.auth();
+  getAuth() {
+    return this.firebaseApp.auth();
   }
 }

@@ -8,8 +8,8 @@ export class UserService {
   constructor(private readonly firebaseService: FirebaseService) {}
 
   async create(createUserDto: CreateUserDto): Promise<UserRecord> {
-    const firestore = await this.firebaseService.getFirestore();
-    const auth = await this.firebaseService.getAuth();
+    const firestore = this.firebaseService.getFirestore();
+    const auth = this.firebaseService.getAuth();
 
     try {
       const userPromise = auth.createUser({
