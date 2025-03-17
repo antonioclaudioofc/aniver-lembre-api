@@ -40,7 +40,7 @@ export class ContactService {
     }
   }
 
-  async findAll(request: Request): Promise<CreateContactDto[]> {
+  async findAll(request: Request): Promise<CreateContactDto[] | []> {
     const firestore = this.firebaseService.getFirestore();
 
     const userId = request['user']?.uid;
@@ -50,13 +50,13 @@ export class ContactService {
     }
 
     try {
-      const contactRed = await firestore
+      const contactRef = await firestore
         .collection('contacts')
         .where('userId', '==', userId)
         .get();
 
-      if (!contactRed.empty) {
-        return contactRed.docs.map((doc) => {
+      if (!contactRef.empty) {
+        return contactRef.docs.map((doc) => {
           const data = doc.data();
           return {
             ...data,
@@ -66,8 +66,8 @@ export class ContactService {
       } else {
         return [];
       }
-    } catch (error) {
-      throw new Error('Erro ao buscar todos os contatos: ' + error.message);
+    } catch {
+      throw new Error('Erro ao buscar os contatos');
     }
   }
 
@@ -81,10 +81,10 @@ export class ContactService {
     }
 
     try {
-      const contactRed = await firestore.collection('contacts').doc(id).get();
+      const contactRef = await firestore.collection('contacts').doc(id).get();
 
-      if (contactRed.exists && contactRed.data()?.userId === userId) {
-        const data = contactRed.data();
+      if (contactRef.exists && contactRef.data()?.userId === userId) {
+        const data = contactRef.data();
 
         if (!data) return [];
 
@@ -95,8 +95,8 @@ export class ContactService {
       } else {
         return [];
       }
-    } catch (error) {
-      throw new Error('Erro ao buscar o contato: ' + error.message);
+    } catch {
+      throw new Error('Erro ao buscar o contato');
     }
   }
 
@@ -125,7 +125,7 @@ export class ContactService {
         id,
         ...updateContactDto,
       } as CreateContactDto;
-    } catch (error) {
+    } catch {
       throw new Error('Erro ao atualizar o contato');
     }
   }
@@ -145,8 +145,8 @@ export class ContactService {
       await contactRef.delete();
 
       return { message: 'Contato removido com sucesso' };
-    } catch (error) {
-      throw new Error('Erro ao exvluir o contato: ');
+    } catch {
+      throw new Error('Erro ao excluir o contato');
     }
   }
 }

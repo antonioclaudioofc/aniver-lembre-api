@@ -5,6 +5,7 @@ import { FirebaseModule } from './firebase/firebase.module';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { ContactModule } from './contact/contact.module';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { ContactModule } from './contact/contact.module';
     FirebaseModule,
     AuthModule,
     ContactModule,
+    NotificationModule,
   ],
   providers: [FirebaseService],
 })
