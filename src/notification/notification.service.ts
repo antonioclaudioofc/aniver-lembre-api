@@ -75,7 +75,7 @@ export class NotificationService {
   async findOne(
     id: string,
     request: Request,
-  ): Promise<CreateNotificationDto | []> {
+  ): Promise<CreateNotificationDto | null> {
     const firestore = this.firebaseService.getFirestore();
 
     const userId = request['user']?.uid;
@@ -93,14 +93,14 @@ export class NotificationService {
       if (notificationRef.exists && notificationRef.data()?.userId === userId) {
         const data = notificationRef.data();
 
-        if (!data) return [];
+        if (!data) return null;
 
         return {
           id,
           ...data,
         } as CreateNotificationDto;
       } else {
-        return [];
+        return null;
       }
     } catch {
       throw new Error('Erro ao buscar a notificação');
@@ -128,9 +128,11 @@ export class NotificationService {
         updatedAt: new Date(),
       });
 
+      const notificationUpdate = await notificationRef.get();
+
       return {
         id,
-        ...updateNotificationDto,
+        ...notificationUpdate.data(),
       } as CreateNotificationDto;
     } catch {
       throw new Error('Erro ao atualizar a notificação');

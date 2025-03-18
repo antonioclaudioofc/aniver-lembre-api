@@ -71,7 +71,10 @@ export class ContactService {
     }
   }
 
-  async findOne(id: string, request: Request): Promise<CreateContactDto | []> {
+  async findOne(
+    id: string,
+    request: Request,
+  ): Promise<CreateContactDto | null> {
     const firestore = this.firebaseService.getFirestore();
 
     const userId = request['user']?.uid;
@@ -86,14 +89,14 @@ export class ContactService {
       if (contactRef.exists && contactRef.data()?.userId === userId) {
         const data = contactRef.data();
 
-        if (!data) return [];
+        if (!data) return null;
 
         return {
           id,
           ...data,
         } as CreateContactDto;
       } else {
-        return [];
+        return null;
       }
     } catch {
       throw new Error('Erro ao buscar o contato');
@@ -118,12 +121,13 @@ export class ContactService {
 
       await contactRef.update({
         ...updateContactDto,
-        updatedAt: new Date(),
       });
+
+      const updateContact = await contactRef.get();
 
       return {
         id,
-        ...updateContactDto,
+        ...updateContact.data(),
       } as CreateContactDto;
     } catch {
       throw new Error('Erro ao atualizar o contato');

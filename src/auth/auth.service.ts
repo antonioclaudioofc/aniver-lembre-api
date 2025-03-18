@@ -34,7 +34,7 @@ export class AuthService {
 
       const expiresIn = 5 * 24 * 60 * 60;
       const token = this.jwtService.sign(payload, { expiresIn });
-      
+
       return { token, expiresIn };
     } catch (error) {
       throw new UnauthorizedException('Email ou senha incorreta!');
