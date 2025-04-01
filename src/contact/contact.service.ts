@@ -2,10 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { CreateContactDto } from './dto/create-contact.dto';
 import { FirebaseService } from 'src/firebase/firebase.service';
 import { UpdateContactDto } from './dto/update-contact.dto';
+import { ContactGateway } from './contact.gateway';
 
 @Injectable()
 export class ContactService {
-  constructor(private readonly firebaseService: FirebaseService) {}
+  constructor(
+    private readonly firebaseService: FirebaseService,
+    private readonly contactGateway: ContactGateway,
+  ) {}
 
   async create(
     createContactDto: CreateContactDto,
@@ -40,7 +44,7 @@ export class ContactService {
     }
   }
 
-  async findAll(request: Request): Promise<CreateContactDto[] | []> {
+  async findAll(request: Request) {
     const firestore = this.firebaseService.getFirestore();
 
     const userId = request['user']?.uid;
@@ -55,20 +59,39 @@ export class ContactService {
         .where('userId', '==', userId)
         .get();
 
-      if (!contactRef.empty) {
-        return contactRef.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            ...data,
-            id: doc.id,
-          } as CreateContactDto;
-        });
-      } else {
-        return [];
-      }
+      const contacts = contactRef.docs.map((doc) => ({
+        ...doc.data(),
+        id: doc.id,
+      }));
+
+      this.listenAllContact(userId);
+
+      return contacts;
     } catch {
       throw new Error('Erro ao buscar os contatos');
     }
+  }
+
+  async listenAllContact(userId: string) {
+    const firestore = this.firebaseService.getFirestore();
+    const contactRef = firestore
+      .collection('contacts')
+      .where('userId', '==', userId);
+
+    contactRef.onSnapshot(
+      (snapshot) => {
+        const contacts = snapshot.docs.map((doc) => ({
+          ...doc.data(),
+          id: doc.id,
+        }));
+
+
+        this.contactGateway.sendUpdate({ userId, contacts });
+      },
+      (error) => {
+        console.error('Erro ao escutar contatos:', error);
+      },
+    );
   }
 
   async findOne(
