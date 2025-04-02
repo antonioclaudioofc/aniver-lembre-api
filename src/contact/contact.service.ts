@@ -6,6 +6,8 @@ import { ContactGateway } from './contact.gateway';
 
 @Injectable()
 export class ContactService {
+  private listeners = new Map<string, () => void>();
+
   constructor(
     private readonly firebaseService: FirebaseService,
     private readonly contactGateway: ContactGateway,
@@ -44,9 +46,8 @@ export class ContactService {
     }
   }
 
-  async findAll(request: Request) {
+  async findAll(request: Request): Promise<CreateContactDto[]> {
     const firestore = this.firebaseService.getFirestore();
-
     const userId = request['user']?.uid;
 
     if (!userId) {
@@ -60,11 +61,13 @@ export class ContactService {
         .get();
 
       const contacts = contactRef.docs.map((doc) => ({
-        ...doc.data(),
+        ...(doc.data() as CreateContactDto),
         id: doc.id,
       }));
 
-      this.listenAllContact(userId);
+      if (!this.listeners.has(userId)) {
+        this.listenAllContact(userId);
+      }
 
       return contacts;
     } catch {
@@ -72,26 +75,27 @@ export class ContactService {
     }
   }
 
-  async listenAllContact(userId: string) {
+  listenAllContact(userId: string) {
     const firestore = this.firebaseService.getFirestore();
     const contactRef = firestore
       .collection('contacts')
       .where('userId', '==', userId);
 
-    contactRef.onSnapshot(
+    const unsubscribe = contactRef.onSnapshot(
       (snapshot) => {
         const contacts = snapshot.docs.map((doc) => ({
           ...doc.data(),
           id: doc.id,
         }));
 
-
-        this.contactGateway.sendUpdate({ userId, contacts });
+        this.contactGateway.sendUpdate(contacts);
       },
       (error) => {
         console.error('Erro ao escutar contatos:', error);
       },
     );
+
+    this.listeners.set(userId, unsubscribe);
   }
 
   async findOne(

@@ -39,7 +39,7 @@ export class ContactController {
   findOne(@Param('id') id: string, @Request() request) {
     return this.contactService.findOne(id, request);
   }
-
+  
   @Patch(':id')
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
