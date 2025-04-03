@@ -82,7 +82,7 @@ export class ContactService {
       .where('userId', '==', userId);
 
     const unsubscribe = contactRef.onSnapshot(
-      (snapshot) => {
+      (snapshot) => { 
         const contacts = snapshot.docs.map((doc) => ({
           ...doc.data(),
           id: doc.id,
