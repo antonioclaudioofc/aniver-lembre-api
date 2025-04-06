@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { FirebaseService } from 'src/firebase/firebase.service';
 import { LoginAuthDto } from './dto/login-auth.dto';
 import { JwtService } from '@nestjs/jwt';
@@ -13,7 +17,7 @@ export class AuthService {
   async signIn(
     loginAuthDto: LoginAuthDto,
   ): Promise<{ token: string; expiresIn: number }> {
-    const auth = await this.firebaseService.getAuth();
+    const auth = this.firebaseService.getAuth();
 
     try {
       const userRecord = await auth.getUserByEmail(loginAuthDto.email);
@@ -23,8 +27,9 @@ export class AuthService {
         loginAuthDto.password,
       );
 
-      if (!idToken)
-        throw new UnauthorizedException('Email ou senha incorreta!');
+      if (!idToken) {
+        throw new UnauthorizedException('Email ou senha incorretos');
+      }
 
       const payload = {
         uid: userRecord.uid,
@@ -32,12 +37,20 @@ export class AuthService {
         name: userRecord.displayName,
       };
 
-      const expiresIn = 5 * 24 * 60 * 60;
+      const expiresIn = 5 * 24 * 60 * 60; // 5 dias
       const token = this.jwtService.sign(payload, { expiresIn });
 
       return { token, expiresIn };
     } catch (error) {
-      throw new UnauthorizedException('Email ou senha incorreta!');
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+
+      if (error?.code === 'auth/user-not-found') {
+        throw new UnauthorizedException('Email não encontrado!');
+      }
+
+      throw new InternalServerErrorException('Erro interno ao autenticar');
     }
   }
 

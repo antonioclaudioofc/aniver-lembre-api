@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { CreateContactDto } from './dto/create-contact.dto';
 import { FirebaseService } from 'src/firebase/firebase.service';
 import { UpdateContactDto } from './dto/update-contact.dto';
@@ -22,7 +26,9 @@ export class ContactService {
     const userId = request['user']?.uid;
 
     if (!userId) {
-      throw new Error('Usuário não autenticado');
+      throw new UnauthorizedException(
+        'Você precisa estar autenticado para criar um contato',
+      );
     }
 
     try {
@@ -41,8 +47,10 @@ export class ContactService {
         id: contactRef.id,
         ...contactData,
       };
-    } catch {
-      throw new Error('Erro ao criar um contato');
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Erro inesperado ao tentar salvar o contato. Tente novamente mais tarde.',
+      );
     }
   }
 
@@ -51,7 +59,9 @@ export class ContactService {
     const userId = request['user']?.uid;
 
     if (!userId) {
-      throw new Error('Usuário não autenticado');
+      throw new UnauthorizedException(
+        'Você precisa estar autenticado para visualizar os contatos',
+      );
     }
 
     try {
@@ -70,8 +80,10 @@ export class ContactService {
       }
 
       return contacts;
-    } catch {
-      throw new Error('Erro ao buscar os contatos');
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Erro inesperado ao buscar os contatos. Tente novamente mais tarde.',
+      );
     }
   }
 
@@ -82,7 +94,7 @@ export class ContactService {
       .where('userId', '==', userId);
 
     const unsubscribe = contactRef.onSnapshot(
-      (snapshot) => { 
+      (snapshot) => {
         const contacts = snapshot.docs.map((doc) => ({
           ...doc.data(),
           id: doc.id,
@@ -113,19 +125,25 @@ export class ContactService {
     try {
       const contactRef = await firestore.collection('contacts').doc(id).get();
 
-      if (contactRef.exists && contactRef.data()?.userId === userId) {
-        const data = contactRef.data();
-
-        if (!data) return null;
-
-        return {
-          id,
-          ...data,
-        } as CreateContactDto;
-      } else {
+      if (!contactRef.exists) {
         return null;
       }
-    } catch {
+
+      const data = contactRef.data();
+
+      if (!data) {
+        return null;
+      }
+
+      if (data.userId !== userId) {
+        return null;
+      }
+
+      return {
+        id,
+        ...data,
+      } as CreateContactDto;
+    } catch (error) {
       throw new Error('Erro ao buscar o contato');
     }
   }
@@ -141,22 +159,29 @@ export class ContactService {
       const contact = await this.findOne(id, request);
 
       if (!contact) {
-        throw new Error('Erro: Contato não encontrado');
+        throw new Error('Contato não encontrado');
       }
 
       const contactRef = firestore.collection('contacts').doc(id);
 
       await contactRef.update({
         ...updateContactDto,
+        updatedAt: new Date(),
       });
 
-      const updateContact = await contactRef.get();
+      const updatedContact = await contactRef.get();
+
+      const data = updatedContact.data();
+
+      if (!data) {
+        throw new Error('Erro ao obter os dados atualizados do contato');
+      }
 
       return {
         id,
-        ...updateContact.data(),
+        ...data,
       } as CreateContactDto;
-    } catch {
+    } catch (error) {
       throw new Error('Erro ao atualizar o contato');
     }
   }
@@ -168,7 +193,7 @@ export class ContactService {
       const contact = await this.findOne(id, request);
 
       if (!contact) {
-        throw new Error('Erro: Contato não encontrado');
+        throw new Error('Contato não encontrado');
       }
 
       const contactRef = firestore.collection('contacts').doc(id);
@@ -176,7 +201,7 @@ export class ContactService {
       await contactRef.delete();
 
       return { message: 'Contato removido com sucesso' };
-    } catch {
+    } catch (error) {
       throw new Error('Erro ao excluir o contato');
     }
   }
