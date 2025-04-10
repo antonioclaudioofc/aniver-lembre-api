@@ -8,7 +8,10 @@ const app_module_1 = require("./app.module");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
     app.enableCors({
-        origin: true,
+        origin: [
+            'https://aniver-lembre.vercel.app',
+            'https://aniver-lembre-api.vercel.app/',
+        ],
         credentials: true,
     });
     app.use(cookieParser());
