@@ -1,14 +1,17 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import * as cookieParser from 'cookie-parser';
+import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({
-    origin: 'https://aniver-lembre.vercel.app',
+    origin: [
+      'https://aniver-lembre.vercel.app',
+      'https://aniver-lembre-api.vercel.app/',
+    ],
     credentials: true,
   });
 
